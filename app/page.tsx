@@ -93,7 +93,7 @@ export default function Home() {
         >
           {names.length > 0 && (
             <p className="underline underline-offset-4 text-center">
-              Tier List will according to this order
+              Tier List will be according to the same order as :
             </p>
           )}
           <div className="flex flex-col gap-4">
