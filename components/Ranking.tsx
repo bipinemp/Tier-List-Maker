@@ -55,13 +55,32 @@ const Ranking: FC<RankingProps> = ({ theIncomingArr }) => {
 
   function handleOnDropDynamicBox(e: React.DragEvent, boxIndex: number) {
     e.preventDefault();
+
     const fileId = e.dataTransfer.getData("fileId") as string;
     const reqImage = imgFiles?.find((file) => file.id === fileId);
-    if (fileId && imgFiles) {
-      const newUpdatedImgFiles = imgFiles?.filter((file) => file.id !== fileId);
-      setImgFiles(newUpdatedImgFiles);
-    }
-    if (reqImage) {
+
+    // Ensure reqImage exists before proceeding
+    if (!reqImage) return;
+
+    // original box index
+    const originalBoxIndex = dynamicBoxes.findIndex((box) =>
+      box.some((file) => file.id === fileId)
+    );
+
+    if (originalBoxIndex !== boxIndex) {
+      setDynamicBoxes((prevBoxes) => {
+        const newBoxes = [...prevBoxes];
+
+        // Check for undefined box before filtering
+        if (newBoxes[originalBoxIndex]) {
+          newBoxes[originalBoxIndex] = newBoxes[originalBoxIndex].filter(
+            (file) => file.id !== fileId
+          );
+        }
+
+        return newBoxes;
+      });
+
       setDynamicBoxes((prevBoxes) => {
         const newBoxes = [...prevBoxes];
         newBoxes[boxIndex] = [
@@ -108,12 +127,14 @@ const Ranking: FC<RankingProps> = ({ theIncomingArr }) => {
             <div className="w-[580px] min-h-[100px] h-auto flex flex-row flex-wrap gap-3 py-2 border-l border-l-white pl-4">
               {box?.map((fileobject) => (
                 <>
-                  {fileobject.url && (
+                  {fileobject.url && fileobject.id && (
                     <div
                       className="relative shrink-0 w-[80px] h-[80px]"
                       key={fileobject.id}
                     >
                       <Image
+                        draggable
+                        onDragStart={(e) => handleOnDrag(e, fileobject.id!)}
                         src={fileobject.url || ""}
                         fill
                         alt=""

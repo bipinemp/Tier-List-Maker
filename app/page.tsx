@@ -8,7 +8,7 @@ import {
   ChevronsUp,
   Trash,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export type NamesType = {
   name: string;
@@ -79,6 +79,21 @@ export default function Home() {
     setNames(filteredNames);
   }
 
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      const message =
+        "All changes will be discarded. Are you sure you want to leave?";
+      event.returnValue = message; // Standard for most browsers
+      return message; // For some older browsers
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
   return (
     <main className="flex flex-col gap-4">
       <h1 className="text-center mt-5 font-black text-3xl underline underline-offset-4">
@@ -135,6 +150,7 @@ export default function Home() {
           <div className="flex flex-col gap-4">
             <form onSubmit={handleSubmit}>
               <input
+                required
                 type="text"
                 onChange={handleChange}
                 value={name}
