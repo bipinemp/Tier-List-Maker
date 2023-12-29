@@ -2,7 +2,7 @@
 
 import { NamesType } from "@/app/page";
 import Image from "next/image";
-import React, { FC, useRef, useState } from "react";
+import React, { FC, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 interface RankingProps {
@@ -26,6 +26,7 @@ type DynamicImageFiles = {
 const Ranking: FC<RankingProps> = ({ theIncomingArr }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imgFiles, setImgFiles] = useState<ImageFiles[] | null>([]);
+  const [imgDyFiles, setImgDyFiles] = useState<ImageFiles[] | null>([]);
 
   const initialDynamicBoxes = theIncomingArr.map((item) => [
     { name: item.name },
@@ -44,6 +45,7 @@ const Ranking: FC<RankingProps> = ({ theIncomingArr }) => {
         url: URL.createObjectURL(file),
       }));
       setImgFiles(imgFilesArray);
+      setImgDyFiles(imgFilesArray);
     } else {
       setImgFiles(null);
     }
@@ -55,14 +57,8 @@ const Ranking: FC<RankingProps> = ({ theIncomingArr }) => {
 
   function handleOnDropDynamicBox(e: React.DragEvent, boxIndex: number) {
     e.preventDefault();
-
     const fileId = e.dataTransfer.getData("fileId") as string;
-    const reqImage = imgFiles?.find((file) => file.id === fileId);
-
-    // Ensure reqImage exists before proceeding
-    if (!reqImage) return;
-
-    // original box index
+    const reqImage = imgDyFiles?.find((file) => file.id === fileId);
     const originalBoxIndex = dynamicBoxes.findIndex((box) =>
       box.some((file) => file.id === fileId)
     );
@@ -70,9 +66,8 @@ const Ranking: FC<RankingProps> = ({ theIncomingArr }) => {
     if (originalBoxIndex !== boxIndex) {
       setDynamicBoxes((prevBoxes) => {
         const newBoxes = [...prevBoxes];
-
-        // Check for undefined box before filtering
-        if (newBoxes[originalBoxIndex]) {
+        newBoxes[boxIndex] = [...newBoxes[boxIndex], { ...reqImage! }];
+        if (originalBoxIndex !== -1) {
           newBoxes[originalBoxIndex] = newBoxes[originalBoxIndex].filter(
             (file) => file.id !== fileId
           );
@@ -80,16 +75,12 @@ const Ranking: FC<RankingProps> = ({ theIncomingArr }) => {
 
         return newBoxes;
       });
-
-      setDynamicBoxes((prevBoxes) => {
-        const newBoxes = [...prevBoxes];
-        newBoxes[boxIndex] = [
-          ...newBoxes[boxIndex],
-          { ...reqImage, index: boxIndex },
-        ];
-        return newBoxes;
-      });
     }
+
+    setImgFiles(
+      (prevImgFiles) =>
+        prevImgFiles?.filter((file) => file.id !== fileId) as ImageFiles[]
+    );
   }
 
   function handleDragOverDynamicBoxes(e: React.DragEvent) {
@@ -127,15 +118,17 @@ const Ranking: FC<RankingProps> = ({ theIncomingArr }) => {
             <div className="w-[580px] min-h-[100px] h-auto flex flex-row flex-wrap gap-3 py-2 border-l border-l-white pl-4">
               {box?.map((fileobject) => (
                 <>
-                  {fileobject.url && fileobject.id && (
+                  {fileobject.url && (
                     <div
                       className="relative shrink-0 w-[80px] h-[80px]"
                       key={fileobject.id}
+                      draggable
+                      onDragStart={(e) => {
+                        handleOnDrag(e, fileobject.id!);
+                      }}
                     >
                       <Image
-                        draggable
-                        onDragStart={(e) => handleOnDrag(e, fileobject.id!)}
-                        src={fileobject.url || ""}
+                        src={fileobject.url}
                         fill
                         alt=""
                         className="rounded-lg"
@@ -179,7 +172,9 @@ const Ranking: FC<RankingProps> = ({ theIncomingArr }) => {
                   fill
                   alt=""
                   draggable
-                  onDragStart={(e) => handleOnDrag(e, fileobject.id)}
+                  onDragStart={(e) => {
+                    handleOnDrag(e, fileobject.id);
+                  }}
                   className="rounded-lg"
                 />
               </div>
